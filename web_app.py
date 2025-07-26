@@ -9,7 +9,7 @@ from PIL import Image
 from datetime import datetime
 import time
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/outputs', static_folder='outputs')
 app.secret_key = 'your-secret-key-here'
 
 # Upload klasörü
