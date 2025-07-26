@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görsel Oluşturucu - Online</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .form-container {
+            padding: 40px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #f5576c;
+            background-color: #fafafa;
+        }
+        
+        .upload-area i {
+            font-size: 3rem;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            font-weight: bold;
+        }
+        
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .image-preview-area {
+            border: 2px dashed #bdc3c7;
+            border-radius: 10px;
+            background-color: white;
+            color: #7f8c8d;
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 20px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .image-preview-area i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+        }
+        
+        .image-preview-area h3 {
+            margin-bottom: 10px;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+        }
+        
+        .image-preview-area p {
+            color: #95a5a6;
+            font-size: 14px;
+        }
+        
+        .select-image-btn {
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+        }
+        
+        .select-image-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .select-image-btn i {
+            margin-right: 8px;
+        }
+        
+        .text-input-section {
+            margin-bottom: 20px;
+        }
+        
+        .text-input-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .text-area {
+            width: 100%;
+            min-height: 120px;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            resize: vertical;
+            margin-bottom: 30px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .text-area:focus {
+            outline: none;
+            border-color: #f5576c;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .feature {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: #f5576c;
+        }
+        
+        .feature h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .feature p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .company-selection {
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .company-selection h3 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.3rem;
+        }
+        
+        .radio-group {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .radio-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            border: 2px solid transparent;
+        }
+        
+        .radio-label:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .radio-label input[type="radio"] {
+            display: none;
+        }
+        
+        .radio-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            margin-right: 10px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .radio-label input[type="radio"]:checked + .radio-custom {
+            border-color: #f5576c;
+            background: #f5576c;
+        }
+        
+        .radio-label input[type="radio"]:checked + .radio-custom::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+        }
+        
+        .radio-label input[type="radio"]:checked ~ {
+            color: #f5576c;
+            font-weight: bold;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-image"></i> Görsel Oluşturucu</h1>
+            <p>Fotoğrafınıza profesyonel metin ekleyin</p>
+        </div>
+        
+        <div class="form-container">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-error">
+                            <i class="fas fa-exclamation-triangle"></i> {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" action="/upload" enctype="multipart/form-data" id="uploadForm">
+                <!-- Görsel Önizleme Alanı -->
+                <div class="image-preview-area" id="imagePreview">
+                    <i class="fas fa-image"></i>
+                    <h3>Görsel seçmek için 'Görsel Seç' butonuna tıklayın</h3>
+                    <p>PNG, JPG, JPEG formatları desteklenir</p>
+                    <img id="previewImage" style="display: none; max-width: 100%; max-height: 150px; margin-top: 10px; border-radius: 8px;">
+                </div>
+
+                <!-- Görsel Seç Butonu -->
+                <button type="button" class="select-image-btn" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-folder-open"></i> Görsel Seç
+                </button>
+                <input type="file" id="fileInput" name="image" class="file-input" accept=".png,.jpg,.jpeg,.gif,.bmp" required style="display: none;">
+
+                <!-- Firma Seçimi -->
+                <div class="company-selection">
+                    <h3>Firma Seçin:</h3>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="company_type" value="gazete" checked>
+                            <span class="radio-custom"></span>
+                            Gazete İlkeni
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="company_type" value="begen">
+                            <span class="radio-custom"></span>
+                            Begen Haber
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Metin Girişi -->
+                <div class="text-input-section">
+                    <h3>Metninizi girin:</h3>
+                    <textarea 
+                        name="text" 
+                        class="text-area" 
+                        placeholder="Görsel üzerine eklenecek metni buraya yazın..." 
+                        required
+                    ></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <i class="fas fa-magic"></i> Görseli Oluştur
+                </button>
+            </form>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Hızlı İşleme</h3>
+                    <p>Saniyeler içinde profesyonel görsel</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-text-height"></i>
+                    </div>
+                    <h3>Akıllı Metin</h3>
+                    <p>Otomatik satır geçişi ve hizalama</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <h3>Yüksek Kalite</h3>
+                    <p>PNG formatında yüksek çözünürlük</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function() {
+            const file = this.files[0];
+            const previewArea = document.getElementById('imagePreview');
+            const previewImage = document.getElementById('previewImage');
+            
+            if (file) {
+                const fileName = file.name;
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                    previewArea.querySelector('h3').textContent = fileName;
+                    previewArea.querySelector('p').textContent = 'Dosya seçildi!';
+                    previewArea.querySelector('i').style.display = 'none';
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        document.getElementById('uploadForm').addEventListener('submit', function() {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> İşleniyor...';
+        });
+    </script>
+</body>
+</html>
