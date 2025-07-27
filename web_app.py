@@ -138,15 +138,14 @@ def download_file(filename):
 
 @app.route("/generate", methods=["POST"])
 def generate():
+    data = request.get_json(force=True)
+    if not data or "title" not in data or "image_url" not in data:
+        return jsonify({"error": "Eksik veri"}), 400
+    title = data["title"]
+    image_url = data["image_url"]
+    print("Başlık:", title)
+    print("Görsel URL:", image_url)
     try:
-        data = request.get_json(force=True)
-        print("GELEN DATA:", data)
-        title = data.get("title")
-        image_url = data.get("image_url")
-        print("TITLE:", title)
-        print("IMAGE URL:", image_url)
-        if not title or not image_url:
-            return jsonify({"error": "Missing title or image_url"}), 400
         render_image(title, image_url)
         return jsonify({"status": "ok"})
     except Exception as e:
