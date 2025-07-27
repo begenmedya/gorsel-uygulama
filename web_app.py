@@ -1,13 +1,15 @@
-from flask import Flask, render_template, request, send_file, flash, redirect, url_for
+from flask import Flask, render_template, request, send_file, flash, redirect, url_for, jsonify
 import os
 import io
 import base64
 from werkzeug.utils import secure_filename
 from main import create_visual
 import tempfile
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 import time
+import requests
+from io import BytesIO
 
 app = Flask(__name__, static_url_path='/outputs', static_folder='outputs')
 app.secret_key = 'your-secret-key-here'
@@ -103,6 +105,34 @@ def upload_file():
 @app.route('/download/<filename>')
 def download_file(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), as_attachment=True)
+
+@app.route('/generate', methods=['POST'])
+def generate():
+    data = request.get_json()
+    title = data.get('title')
+    image_url = data.get('image_url')
+
+    if not title or not image_url:
+        return jsonify({"error": "Eksik veri"}), 400
+
+    response = requests.get(image_url)
+    if response.status_code != 200:
+        return jsonify({"error": "Görsel alınamadı"}), 400
+
+    img = Image.open(BytesIO(response.content)).convert("RGB")
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("Montserrat-Bold.ttf", 40)
+    except:
+        font = ImageFont.load_default()
+    draw.text((50, 50), title, fill="white", font=font)
+
+    filename = f"generated_{int(time.time())}.png"
+    output_path = os.path.join("outputs", filename)
+    img.save(output_path)
+
+    url = f"/outputs/{filename}"
+    return jsonify({"status": "ok", "url": url}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
