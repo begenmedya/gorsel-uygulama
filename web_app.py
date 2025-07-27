@@ -113,26 +113,13 @@ def generate():
     image_url = data.get('image_url')
 
     if not title or not image_url:
-        return jsonify({"error": "Eksik veri"}), 400
+        return jsonify({"error": "Missing data"}), 400
 
-    response = requests.get(image_url)
-    if response.status_code != 200:
-        return jsonify({"error": "Görsel alınamadı"}), 400
+    # buraya görsel üretme işlemi gelecek
+    print("Başlık:", title)
+    print("Görsel URL:", image_url)
 
-    img = Image.open(BytesIO(response.content)).convert("RGB")
-    draw = ImageDraw.Draw(img)
-    try:
-        font = ImageFont.truetype("Montserrat-Bold.ttf", 40)
-    except:
-        font = ImageFont.load_default()
-    draw.text((50, 50), title, fill="white", font=font)
-
-    filename = f"generated_{int(time.time())}.png"
-    output_path = os.path.join("outputs", filename)
-    img.save(output_path)
-
-    url = f"/outputs/{filename}"
-    return jsonify({"status": "ok", "url": url}), 200
+    return jsonify({"status": "ok"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
