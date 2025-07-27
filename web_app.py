@@ -35,9 +35,15 @@ def slugify(value):
     return value
 
 def render_image(title, image_url):
-    response = requests.get(image_url)
-    print("IMAGE RESPONSE STATUS:", response.status_code)
-    image = Image.open(BytesIO(response.content)).convert("RGB")
+    try:
+        response = requests.get(image_url)
+        print("IMAGE RESPONSE STATUS:", response.status_code)
+        response.raise_for_status()
+        img = Image.open(BytesIO(response.content))
+    except Exception as e:
+        print("Görsel alınamadı veya okunamadı:", str(e))
+        return jsonify({"error": f"Görsel alınamadı veya okunamadı: {str(e)}"}), 400
+    image = img.convert("RGB")
     draw = ImageDraw.Draw(image)
     try:
         font = ImageFont.truetype("Montserrat-Bold.ttf", 36)
