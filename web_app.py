@@ -35,8 +35,11 @@ def slugify(value):
     return value
 
 def render_image(title, image_url):
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
     try:
-        response = requests.get(image_url)
+        response = requests.get(image_url, headers=headers)
         print("IMAGE RESPONSE STATUS:", response.status_code)
         response.raise_for_status()
         img = Image.open(BytesIO(response.content))
