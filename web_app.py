@@ -133,14 +133,10 @@ def generate():
     image_url = data.get('image_url')
 
     if not title or not image_url:
-        return jsonify({"status": "error", "message": "Eksik veri"}), 400
+        return jsonify({"error": "Missing title or image_url"}), 400
 
     print(f"Başlık: {title}")
-    print(f"Görsel URL: {image_url}")
+    print(f"Görsel: {image_url}")
 
     render_image(title, image_url)
-
-    return jsonify({"status": "ok"}), 200
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    return jsonify({"status": "ok"})
