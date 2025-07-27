@@ -138,9 +138,9 @@ def upload_file():
 def download_file(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), as_attachment=True)
 
-@app.route('/outputs/<filename>')
+@app.route('/outputs/<path:filename>')
 def serve_file(filename):
-    return send_from_directory("outputs", filename)
+    return send_from_directory('outputs', filename)
 
 @app.route("/generate", methods=["POST"])
 def generate():
