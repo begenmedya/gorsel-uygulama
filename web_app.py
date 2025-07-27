@@ -138,16 +138,18 @@ def download_file(filename):
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    data = request.get_json(force=True)
-    if not data or "title" not in data or "image_url" not in data:
-        return jsonify({"error": "Eksik veri"}), 400
-    title = data["title"]
-    image_url = data["image_url"]
-    print("Başlık:", title)
-    print("Görsel URL:", image_url)
     try:
-        render_image(title, image_url)
-        return jsonify({"status": "ok"})
+        data = request.get_json(force=True)  # force=True şart!
     except Exception as e:
-        print("HATA:", str(e))
-        return "JSON Hatası: " + str(e), 400
+        return jsonify({"error": f"JSON alınamadı: {str(e)}"}), 400
+
+    title = data.get("title")
+    image_url = data.get("image_url")
+
+    if not title or not image_url:
+        return jsonify({"error": "Eksik veri"}), 400
+
+    print("✅ Başlık:", title)
+    print("✅ Görsel URL:", image_url)
+    
+    return jsonify({"status": "ok"})  # Test amaçlı sade yanıt
