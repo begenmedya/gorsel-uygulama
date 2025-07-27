@@ -36,6 +36,7 @@ def slugify(value):
 
 def render_image(title, image_url):
     response = requests.get(image_url)
+    print("IMAGE RESPONSE STATUS:", response.status_code)
     image = Image.open(BytesIO(response.content)).convert("RGB")
     draw = ImageDraw.Draw(image)
     try:
@@ -126,17 +127,19 @@ def upload_file():
 def download_file(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), as_attachment=True)
 
-@app.route('/generate', methods=['POST'])
+@app.route("/generate", methods=["POST"])
 def generate():
-    data = request.get_json()
-    title = data.get('title')
-    image_url = data.get('image_url')
-
-    if not title or not image_url:
-        return jsonify({"error": "Missing title or image_url"}), 400
-
-    print(f"Başlık: {title}")
-    print(f"Görsel: {image_url}")
-
-    render_image(title, image_url)
-    return jsonify({"status": "ok"})
+    try:
+        data = request.get_json(force=True)
+        print("GELEN DATA:", data)
+        title = data.get("title")
+        image_url = data.get("image_url")
+        print("TITLE:", title)
+        print("IMAGE URL:", image_url)
+        if not title or not image_url:
+            return jsonify({"error": "Missing title or image_url"}), 400
+        render_image(title, image_url)
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        print("HATA:", str(e))
+        return "JSON Hatası: " + str(e), 400
