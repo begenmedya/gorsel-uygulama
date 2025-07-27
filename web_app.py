@@ -138,18 +138,11 @@ def download_file(filename):
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    try:
-        data = request.get_json(force=True)  # force=True şart!
-    except Exception as e:
-        return jsonify({"error": f"JSON alınamadı: {str(e)}"}), 400
-
+    data = request.get_json(force=True)
     title = data.get("title")
     image_url = data.get("image_url")
 
-    if not title or not image_url:
-        return jsonify({"error": "Eksik veri"}), 400
+    # 🔽 Burada görseli üret, kaydet, dosya yolunu al
+    final_path = render_image(title, image_url)  # render_image fonksiyonunu sen yazmıştın
 
-    print("✅ Başlık:", title)
-    print("✅ Görsel URL:", image_url)
-    
-    return jsonify({"status": "ok"})  # Test amaçlı sade yanıt
+    return jsonify({"status": "ok", "file_path": final_path})
