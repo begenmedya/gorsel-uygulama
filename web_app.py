@@ -11,6 +11,8 @@ import time
 import requests
 from io import BytesIO
 import re
+import uuid
+from flask import send_from_directory
 
 app = Flask(__name__, static_url_path='/outputs', static_folder='outputs')
 app.secret_key = 'your-secret-key-here'
@@ -136,15 +138,35 @@ def upload_file():
 def download_file(filename):
     return send_file(os.path.join(OUTPUT_FOLDER, filename), as_attachment=True)
 
+@app.route('/outputs/<filename>')
+def serve_file(filename):
+    return send_from_directory("outputs", filename)
+
 @app.route("/generate", methods=["POST"])
 def generate():
     data = request.get_json(force=True)
     title = data.get("title")
     image_url = data.get("image_url")
 
-    final_path = render_image(title, image_url)
-    # outputs/ klasörüne göre göreli yol
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(image_url, headers=headers)
+    image = Image.open(BytesIO(response.content)).convert("RGBA")
+
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default()
+    draw.text((10, 10), title, fill="white", font=font)
+
+    filename = f"IMG_{uuid.uuid4().hex}.png"
+    file_path = os.path.join("outputs", filename)
+
+    try:
+        image.save(file_path)
+        print("✅ Dosya kaydedildi:", file_path)
+    except Exception as e:
+        print("❌ HATA:", str(e))
+        return jsonify({"status": "error", "error": str(e)})
+
     return jsonify({
-        "file_path": final_path,
-        "status": "ok"
+        "status": "ok",
+        "file_path": f"https://gorsel-uygulama.onrender.com/outputs/{filename}"
     })
