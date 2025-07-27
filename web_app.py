@@ -153,25 +153,32 @@ def generate():
     title = data.get("title")
     image_url = data.get("image_url")
 
+    # Geçici input dosyası oluştur
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(image_url, headers=headers)
-    image = Image.open(BytesIO(response.content)).convert("RGBA")
+    input_tempfile = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+    input_tempfile.write(response.content)
+    input_tempfile.close()
 
-    draw = ImageDraw.Draw(image)
-    font = ImageFont.load_default()
-    draw.text((10, 10), title, fill="white", font=font)
-
+    # Benzersiz çıktı dosyası adı oluştur
     filename = f"IMG_{uuid.uuid4().hex}.png"
-    file_path = os.path.join("outputs", filename)
+    file_path = os.path.join(OUTPUT_FOLDER, filename)
 
+    # create_visual() fonksiyonunu kullan
     try:
-        image.save(file_path)
+        success = create_visual(input_tempfile.name, file_path, title, 'gazete')
+        if not success:
+            return jsonify({"status": "error", "error": "create_visual başarısız"})
+
         print("✅ Dosya kaydedildi:", file_path)
+        return jsonify({
+            "status": "ok",
+            "file_path": f"https://gorsel-uygulama.onrender.com/get-image/{filename}"
+        })
     except Exception as e:
         print("❌ HATA:", str(e))
         return jsonify({"status": "error", "error": str(e)})
-
-    return jsonify({
-        "status": "ok",
-        "file_path": f"https://gorsel-uygulama.onrender.com/get-image/{filename}"
-    })
+    finally:
+        # Geçici input dosyasını temizle
+        if os.path.exists(input_tempfile.name):
+            os.unlink(input_tempfile.name)
