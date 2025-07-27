@@ -142,7 +142,9 @@ def generate():
     title = data.get("title")
     image_url = data.get("image_url")
 
-    # 🔽 Burada görseli üret, kaydet, dosya yolunu al
-    final_path = render_image(title, image_url)  # render_image fonksiyonunu sen yazmıştın
-
-    return jsonify({"status": "ok", "file_path": final_path})
+    final_path = render_image(title, image_url)
+    # outputs/ klasörüne göre göreli yol
+    return jsonify({
+        "file_path": final_path,
+        "status": "ok"
+    })
