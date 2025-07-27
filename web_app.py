@@ -142,6 +142,11 @@ def download_file(filename):
 def serve_file(filename):
     return send_from_directory('outputs', filename)
 
+# Alternatif ve sorunsuz download endpoint
+@app.route('/get-image/<filename>')
+def get_generated_image(filename):
+    return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
+
 @app.route("/generate", methods=["POST"])
 def generate():
     data = request.get_json(force=True)
@@ -168,5 +173,5 @@ def generate():
 
     return jsonify({
         "status": "ok",
-        "file_path": f"https://gorsel-uygulama.onrender.com/outputs/{filename}"
+        "file_path": f"https://gorsel-uygulama.onrender.com/get-image/{filename}"
     })
