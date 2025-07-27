@@ -10,6 +10,7 @@ from datetime import datetime
 import time
 import requests
 from io import BytesIO
+import re
 
 app = Flask(__name__, static_url_path='/outputs', static_folder='outputs')
 app.secret_key = 'your-secret-key-here'
@@ -26,6 +27,25 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def slugify(value):
+    value = str(value)
+    value = re.sub(r'[^\w\s-]', '', value).strip().lower()
+    value = re.sub(r'[-\s]+', '-', value)
+    return value
+
+def render_image(title, image_url):
+    response = requests.get(image_url)
+    image = Image.open(BytesIO(response.content)).convert("RGB")
+    draw = ImageDraw.Draw(image)
+    try:
+        font = ImageFont.truetype("Montserrat-Bold.ttf", 36)
+    except:
+        font = ImageFont.load_default()
+    draw.text((50, 50), title, font=font, fill="white")
+    output_path = f"outputs/{slugify(title)}.jpg"
+    image.save(output_path)
+    print(f"Oluşturulan görsel: {output_path}")
 
 @app.route('/')
 def index():
@@ -113,11 +133,12 @@ def generate():
     image_url = data.get('image_url')
 
     if not title or not image_url:
-        return jsonify({"error": "Missing data"}), 400
+        return jsonify({"status": "error", "message": "Eksik veri"}), 400
 
-    # buraya görsel üretme işlemi gelecek
-    print("Başlık:", title)
-    print("Görsel URL:", image_url)
+    print(f"Başlık: {title}")
+    print(f"Görsel URL: {image_url}")
+
+    render_image(title, image_url)
 
     return jsonify({"status": "ok"}), 200
 
