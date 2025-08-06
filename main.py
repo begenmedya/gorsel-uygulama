@@ -23,20 +23,25 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
         template_width, template_height = template.size
         print(f"Şablon boyutu: {template_width}x{template_height}")
 
-        # Kişi fotoğrafını yatay olarak tam sığacak şekilde yerleştir
-        target_width = 961  # Hedef genişlik
+        # Kişi fotoğrafını daha büyük bir alana yerleştir
+        target_width = 1200  # Hedef genişlik arttırıldı
+        target_height = 1000  # Hedef yükseklik arttırıldı
         
-        # Yatay genişliğe göre oranı hesapla
+        # En-boy oranını koru
         width_ratio = target_width / person_img.width
-        new_width = target_width
-        new_height = int(person_img.height * width_ratio)
+        height_ratio = target_height / person_img.height
+        ratio = min(width_ratio, height_ratio)
+        
+        # Yeni boyutları hesapla
+        new_width = int(person_img.width * ratio)
+        new_height = int(person_img.height * ratio)
         
         # Görseli yeniden boyutlandır
         person_img = person_img.resize((new_width, new_height), Image.LANCZOS)
         
-        # Görseli konumlandır
-        paste_x = 70  # Sol kenardan başla
-        paste_y = 700  # Üstten başlangıç noktası
+        # Görseli konumlandır (biraz daha yukarı)
+        paste_x = 50  # Sol kenardan başla
+        paste_y = 600  # Üstten başlangıç noktası (yukarı çekildi)
         
         template.paste(person_img, (paste_x, paste_y), person_img)
 
