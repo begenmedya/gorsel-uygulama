@@ -152,6 +152,10 @@ def generate():
     data = request.get_json(force=True)
     title = data.get("title")
     image_url = data.get("image_url")
+    brand = (data.get("brand") or "gazeteilke").lower()
+
+    # Firma tipini belirle
+    company_type = "begen" if brand == "begenhaber" else "gazete"
 
     # Geçici input dosyası oluştur
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -166,7 +170,7 @@ def generate():
 
     # create_visual() fonksiyonunu kullan
     try:
-        success = create_visual(input_tempfile.name, file_path, title, 'gazete')
+        success = create_visual(input_tempfile.name, file_path, title, company_type)
         if not success:
             return jsonify({"status": "error", "error": "create_visual başarısız"})
 
