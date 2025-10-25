@@ -1,13 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
 
-def create_visual(person_i            font = ImageFont.truetype(font_path, font_size)
-                break
-            except:
-                continue
-        
-        if font is None:
-            font = ImageFont.load_default(), output_path, name_text, company_type="gazete"):
+def create_visual(person_image_path, output_path, name_text, company_type="gazete"):
     try:
         # Firma tipine göre şablon ve logo dosyalarını seç
         if company_type == "begen":
