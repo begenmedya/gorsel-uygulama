@@ -13,13 +13,25 @@ from io import BytesIO
 import re
 import uuid
 from flask import send_from_directory
+import shutil
+import warnings
 
-app = Flask(__name__, static_url_path='/outputs', static_folder='outputs')
-app.secret_key = 'your-secret-key-here'
+app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
 # Temp ve output klasörleri için /tmp kullan (Render.com için)
 UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp/uploads')
 OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER', '/tmp/outputs')
+
+# Geçici klasörleri temizle ve yeniden oluştur
+def setup_folders():
+    for folder in [UPLOAD_FOLDER, OUTPUT_FOLDER]:
+        try:
+            if os.path.exists(folder):
+                shutil.rmtree(folder)
+            os.makedirs(folder, exist_ok=True)
+        except Exception as e:
+            warnings.warn(f"Klasör yönetimi hatası {folder}: {e}")
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
 # Klasörleri oluştur
@@ -186,10 +198,21 @@ def generate():
         output_path = os.path.join(OUTPUT_FOLDER, filename)
 
         try:
+            # Önce dosyaların var olduğundan emin ol
+            if not os.path.exists(temp_input_path):
+                raise FileNotFoundError("Kaynak görsel bulunamadı")
+
+            # Çıktı klasörünün var olduğundan emin ol
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
             # create_visual() fonksiyonunu kullan
             success = create_visual(temp_input_path, output_path, title, company_type)
             if not success:
                 raise Exception("Görsel oluşturulamadı")
+
+            # Çıktı dosyasının oluştuğunu kontrol et
+            if not os.path.exists(output_path):
+                raise FileNotFoundError("Çıktı dosyası oluşturulamadı")
 
             print("✅ Dosya kaydedildi:", output_path)
             return jsonify({
