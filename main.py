@@ -100,18 +100,22 @@ def create_visual(person_i            font = ImageFont.truetype(font_path, font_
         
         # Metin alanı tanımla (şablonun SAĞ ÜST kısmındaki mor alan)
         text_area = {
-            'x': 550,          # Sağ boşluğu artır
-            'y': 0,           # Daha yukarıdan başla
-            'width': 700,      # Genişliği azalt (kenarlardan daha fazla boşluk)
-            'height': 700      # Mor kutunun yüksekliği
+            'x': 600,          # Sağ kenardan daha fazla boşluk
+            'y': 50,           # Üstten boşluk bırak
+            'width': 600,      # Genişliği daha da azalt (kenarlardan daha fazla boşluk)
+            'height': 500      # Yüksekliği azalt (üst ve alttan daha fazla boşluk)
         }
         
-        # Font boyutunu metin uzunluğuna göre hızlı bir şekilde ayarla
+        # Font boyutunu metin uzunluğuna göre ayarla
         text_len = len(name_text)
-        if text_len > 100:
+        if text_len > 200:
+            font_size = 35
+        elif text_len > 150:
             font_size = 40
+        elif text_len > 100:
+            font_size = 45
         elif text_len > 50:
-            font_size = 50
+            font_size = 55
         else:
             font_size = 72
 
@@ -124,10 +128,20 @@ def create_visual(person_i            font = ImageFont.truetype(font_path, font_
             font = ImageFont.truetype(font_paths[0], font_size)
             test_lines = wrap_text(name_text, font, text_area['width'], draw)
         
-        line_height = font_size + 6  # Satır arası boşluk
+        # Font boyutunu ve satır arasını ayarla
+        line_height = int(font_size * 1.2)  # Satır arası boşluğu artır
         lines = test_lines  # Zaten hesapladığımız satırları kullan
+
+        # Eğer toplam metin yüksekliği alanı aşıyorsa fontu küçült
+        total_height = len(lines) * line_height
+        while total_height > text_area['height'] and font_size > 30:
+            font_size -= 2
+            font = ImageFont.truetype(font_paths[0], font_size)
+            line_height = int(font_size * 1.2)
+            lines = wrap_text(name_text, font, text_area['width'], draw)
+            total_height = len(lines) * line_height
         
-        print(f"Metin {len(lines)} satıra bölündü")
+        print(f"Metin {len(lines)} satıra bölündü, font boyutu: {font_size}")
         
         # Her satırı merkeze hizala ve yaz
         total_text_height = len(lines) * line_height
