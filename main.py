@@ -94,13 +94,28 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
         
         # Metin alanı tanımla (şablonun SAĞ ÜST kısmındaki mor alan)
         text_area = {
-            'x': 500,          # Mor kutunun başladığı yer (sağ taraf)
-            'y': 10,           # Biraz daha aşağıdan başla  
-            'width': 800,      # Mor kutunun genişliği
+            'x': 550,          # Sağ boşluğu artır
+            'y': 0,           # Daha yukarıdan başla
+            'width': 700,      # Genişliği azalt (kenarlardan daha fazla boşluk)
             'height': 700      # Mor kutunun yüksekliği
         }
         
-        line_height = 78  # Satır arası boşluk
+        # Metin uzunluğuna göre font boyutunu ayarla
+        test_font_size = 72
+        test_font = None
+        while test_font_size > 30:  # Minimum font boyutu
+            try:
+                test_font = ImageFont.truetype(font_paths[0], test_font_size)
+                test_lines = wrap_text(name_text, test_font, text_area['width'], draw)
+                total_height = len(test_lines) * (test_font_size + 6)  # 6 piksel ekstra boşluk
+                if total_height <= text_area['height']:
+                    break
+                test_font_size -= 2
+            except:
+                break
+        
+        font_size = test_font_size
+        line_height = font_size + 6  # Satır arası boşluk
         
         # Metni otomatik satırlara böl
         lines = wrap_text(name_text, font, text_area['width'], draw)
