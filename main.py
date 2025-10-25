@@ -108,27 +108,29 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
             'height': 450      # Yükseklik (üst ve alttan boşluk bırakmak için)
         }
         
-        # Sabit başlangıç font boyutu
-        font_size = 60
-        font = ImageFont.truetype(font_paths[0], font_size)
+        # Dinamik font boyutu ayarlama
+        max_font_size = 80  # Maksimum font boyutu
+        min_font_size = 25  # Minimum font boyutu
+        font_size = max_font_size
         
-        # Metni satırlara böl
-        lines = wrap_text(name_text, font, text_area['width'], draw)
-        
-        # Font boyutunu ve satır arasını ayarla
-        line_height = font_size + 10  # Satır arası boşluğu
-        
-        # Eğer metin alanından taşıyorsa font boyutunu küçült
-        total_height = len(lines) * line_height
-        while total_height > text_area['height'] or len(lines) > 4:
-            font_size -= 5
-            if font_size < 30:  # Minimum font boyutu
-                break
-                
+        # İkili arama ile optimum font boyutunu bul
+        while max_font_size - min_font_size > 1:
+            font_size = (max_font_size + min_font_size) // 2
             font = ImageFont.truetype(font_paths[0], font_size)
-            line_height = font_size + 10
             lines = wrap_text(name_text, font, text_area['width'], draw)
+            line_height = int(font_size * 1.2)  # Satır arası boşluğu font boyutuna göre ayarla
             total_height = len(lines) * line_height
+            
+            if total_height > text_area['height'] or len(lines) > 5:  # 5'ten fazla satır olmasın
+                max_font_size = font_size
+            else:
+                min_font_size = font_size
+                
+        # Son font boyutunu ayarla
+        font_size = min_font_size
+        font = ImageFont.truetype(font_paths[0], font_size)
+        lines = wrap_text(name_text, font, text_area['width'], draw)
+        line_height = int(font_size * 1.2)  # Final satır arası boşluğu
         
         print(f"Metin {len(lines)} satıra bölündü, font boyutu: {font_size}")
         
