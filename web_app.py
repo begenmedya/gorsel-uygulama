@@ -149,44 +149,59 @@ def get_generated_image(filename):
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    data = request.get_json(force=True)
-    title = data.get("title")
-    image_url = data.get("image_url")
-    brand = (data.get("brand") or "gazeteilke").lower()
-
-    # Firma tipini belirle
-    company_type = "begen" if brand == "begenhaber" else "gazete"
-
-    # Geçici input dosyası oluştur
-    headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        response = requests.get(image_url, headers=headers, timeout=10)  # Timeout ekle
-        response.raise_for_status()  # HTTP hataları için kontrol
-    except requests.exceptions.RequestException as e:
-        return jsonify({"status": "error", "error": f"Görsel indirilemedi: {str(e)}"})
+        data = request.get_json(force=True)
+        title = data.get("title")
+        image_url = data.get("image_url")
+        brand = (data.get("brand") or "gazeteilke").lower()
 
-    # Benzersiz çıktı dosyası adı oluştur
-    filename = f"IMG_{int(time.time())}_{uuid.uuid4().hex[:8]}.png"
-    file_path = os.path.join(OUTPUT_FOLDER, filename)
-    
-    # Geçici dosya kullanmadan doğrudan BytesIO ile çalış
-    input_buffer = BytesIO(response.content)
+        if not title or not image_url:
+            return jsonify({"status": "error", "error": "Title ve image_url gerekli"}), 400
 
-    # create_visual() fonksiyonunu kullan
-    try:
-        success = create_visual(input_tempfile.name, file_path, title, company_type)
-        if not success:
-            return jsonify({"status": "error", "error": "create_visual başarısız"})
+        # Firma tipini belirle
+        company_type = "begen" if brand == "begenhaber" else "gazete"
 
-        print("✅ Dosya kaydedildi:", file_path)
-        return jsonify({
-            "status": "ok",
-            "file_path": f"https://gorsel-uygulama.onrender.com/get-image/{filename}"
-        })
+        # Geçici dosyaları oluştur
+        temp_input = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+        temp_input_path = temp_input.name
+        temp_input.close()
+
+        # Görseli indir
+        headers = {"User-Agent": "Mozilla/5.0"}
+        try:
+            response = requests.get(image_url, headers=headers, timeout=10)
+            response.raise_for_status()
+            with open(temp_input_path, 'wb') as f:
+                f.write(response.content)
+        except Exception as e:
+            if os.path.exists(temp_input_path):
+                os.unlink(temp_input_path)
+            return jsonify({"status": "error", "error": f"Görsel indirilemedi: {str(e)}"}), 400
+
+        # Benzersiz çıktı dosyası adı oluştur
+        filename = f"IMG_{int(time.time())}_{uuid.uuid4().hex[:8]}.png"
+        output_path = os.path.join(OUTPUT_FOLDER, filename)
+
+        try:
+            # create_visual() fonksiyonunu kullan
+            success = create_visual(temp_input_path, output_path, title, company_type)
+            if not success:
+                raise Exception("Görsel oluşturulamadı")
+
+            print("✅ Dosya kaydedildi:", output_path)
+            return jsonify({
+                "status": "ok",
+                "file_path": f"/get-image/{filename}"
+            })
+        except Exception as e:
+            print("❌ HATA:", str(e))
+            return jsonify({"status": "error", "error": str(e)}), 500
+        finally:
+            # Geçici dosyaları temizle
+            if os.path.exists(temp_input_path):
+                try:
+                    os.unlink(temp_input_path)
+                except:
+                    pass
     except Exception as e:
-        print("❌ HATA:", str(e))
-        return jsonify({"status": "error", "error": str(e)})
-    finally:
-        # Geçici input dosyasını temizle
-        if os.path.exists(input_tempfile.name):
-            os.unlink(input_tempfile.name)
+        return jsonify({"status": "error", "error": str(e)}), 500

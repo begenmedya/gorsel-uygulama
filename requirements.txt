@@ -1,4 +1,7 @@
 Flask==2.3.3
-gunicorn
-Pillow
-requests
+gunicorn==21.2.0
+Pillow==10.1.0
+requests==2.31.0
+Werkzeug==2.3.7
+uuid==1.30
+python-dotenv==1.0.0
