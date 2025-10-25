@@ -25,7 +25,6 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
 # Uygulama başlatıldığında çalışacak kod
-@app.before_first_request
 def setup_app():
     try:
         # Asset dosyalarının varlığını kontrol et
@@ -47,14 +46,18 @@ def setup_app():
         
         if missing_files:
             logger.error(f"Eksik dosyalar: {', '.join(missing_files)}")
-            raise FileNotFoundError(f"Gerekli dosyalar eksik: {', '.join(missing_files)}")
+            # Sadece uyarı ver, uygulamayı durdurmaya gerek yok
+            logger.warning(f"Gerekli dosyalar eksik: {', '.join(missing_files)}")
             
         # Geçici klasörleri temizle ve yeniden oluştur
         setup_folders()
         
     except Exception as e:
         logger.error(f"Uygulama başlatma hatası: {str(e)}")
-        raise
+
+# Uygulama başlatılırken setup'ı çalıştır
+with app.app_context():
+    setup_app()
 
 # Temp ve output klasörleri için /tmp kullan (Render.com için)
 UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp/uploads')
