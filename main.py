@@ -3,14 +3,13 @@ import os
 
 def create_visual(person_image_path, output_path, name_text, company_type="gazete"):
     try:
-        # Şablon ve logo dosyaları için tam yolları kullan
-        base_path = os.path.dirname(os.path.abspath(__file__))
+        # Firma tipine göre şablon ve logo dosyalarını seç
         if company_type == "begen":
-            template_path = os.path.join(base_path, "begentemplate.png")
-            logo_path = os.path.join(base_path, "BEGEN HABER.png")
+            template_path = "begentemplate.png"
+            logo_path = "BEGEN HABER.png"
         else:  # varsayılan gazete
-            template_path = os.path.join(base_path, "template.png")
-            logo_path = os.path.join(base_path, "logo.png")
+            template_path = "template.png"
+            logo_path = "logo.png"
             
         # Dosyaların varlığını kontrol et
         if not os.path.exists(template_path):
@@ -103,44 +102,31 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
         
         # Metin alanı tanımla (şablonun SAĞ ÜST kısmındaki mor alan)
         text_area = {
-            'x': 600,          # Sağ kenardan daha fazla boşluk
-            'y': 50,           # Üstten boşluk bırak
-            'width': 600,      # Genişliği daha da azalt (kenarlardan daha fazla boşluk)
-            'height': 500      # Yüksekliği azalt (üst ve alttan daha fazla boşluk)
+            'x': 500,          # Sağ taraftan başla
+            'y': 100,         # Üstten boşluk bırak
+            'width': 800,      # Genişlik
+            'height': 450      # Yükseklik (üst ve alttan boşluk bırakmak için)
         }
         
-        # Font boyutunu metin uzunluğuna göre ayarla
-        text_len = len(name_text)
-        if text_len > 200:
-            font_size = 35
-        elif text_len > 150:
-            font_size = 40
-        elif text_len > 100:
-            font_size = 45
-        elif text_len > 50:
-            font_size = 55
-        else:
-            font_size = 72
-
+        # Sabit başlangıç font boyutu
+        font_size = 60
         font = ImageFont.truetype(font_paths[0], font_size)
-        test_lines = wrap_text(name_text, font, text_area['width'], draw)
         
-        # Eğer metin sığmazsa, font boyutunu azalt
-        while len(test_lines) * (font_size + 6) > text_area['height'] and font_size > 30:
-            font_size -= 5
-            font = ImageFont.truetype(font_paths[0], font_size)
-            test_lines = wrap_text(name_text, font, text_area['width'], draw)
+        # Metni satırlara böl
+        lines = wrap_text(name_text, font, text_area['width'], draw)
         
         # Font boyutunu ve satır arasını ayarla
-        line_height = int(font_size * 1.2)  # Satır arası boşluğu artır
-        lines = test_lines  # Zaten hesapladığımız satırları kullan
-
-        # Eğer toplam metin yüksekliği alanı aşıyorsa fontu küçült
+        line_height = font_size + 10  # Satır arası boşluğu
+        
+        # Eğer metin alanından taşıyorsa font boyutunu küçült
         total_height = len(lines) * line_height
-        while total_height > text_area['height'] and font_size > 30:
-            font_size -= 2
+        while total_height > text_area['height'] or len(lines) > 4:
+            font_size -= 5
+            if font_size < 30:  # Minimum font boyutu
+                break
+                
             font = ImageFont.truetype(font_paths[0], font_size)
-            line_height = int(font_size * 1.2)
+            line_height = font_size + 10
             lines = wrap_text(name_text, font, text_area['width'], draw)
             total_height = len(lines) * line_height
         
