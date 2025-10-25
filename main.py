@@ -1,7 +1,13 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
 
-def create_visual(person_image_path, output_path, name_text, company_type="gazete"):
+def create_visual(person_i            font = ImageFont.truetype(font_path, font_size)
+                break
+            except:
+                continue
+        
+        if font is None:
+            font = ImageFont.load_default(), output_path, name_text, company_type="gazete"):
     try:
         # Firma tipine göre şablon ve logo dosyalarını seç
         if company_type == "begen":
@@ -100,25 +106,26 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
             'height': 700      # Mor kutunun yüksekliği
         }
         
-        # Metin uzunluğuna göre font boyutunu ayarla
-        test_font_size = 72
-        test_font = None
-        while test_font_size > 30:  # Minimum font boyutu
-            try:
-                test_font = ImageFont.truetype(font_paths[0], test_font_size)
-                test_lines = wrap_text(name_text, test_font, text_area['width'], draw)
-                total_height = len(test_lines) * (test_font_size + 6)  # 6 piksel ekstra boşluk
-                if total_height <= text_area['height']:
-                    break
-                test_font_size -= 2
-            except:
-                break
+        # Font boyutunu metin uzunluğuna göre hızlı bir şekilde ayarla
+        text_len = len(name_text)
+        if text_len > 100:
+            font_size = 40
+        elif text_len > 50:
+            font_size = 50
+        else:
+            font_size = 72
+
+        font = ImageFont.truetype(font_paths[0], font_size)
+        test_lines = wrap_text(name_text, font, text_area['width'], draw)
         
-        font_size = test_font_size
+        # Eğer metin sığmazsa, font boyutunu azalt
+        while len(test_lines) * (font_size + 6) > text_area['height'] and font_size > 30:
+            font_size -= 5
+            font = ImageFont.truetype(font_paths[0], font_size)
+            test_lines = wrap_text(name_text, font, text_area['width'], draw)
+        
         line_height = font_size + 6  # Satır arası boşluk
-        
-        # Metni otomatik satırlara böl
-        lines = wrap_text(name_text, font, text_area['width'], draw)
+        lines = test_lines  # Zaten hesapladığımız satırları kullan
         
         print(f"Metin {len(lines)} satıra bölündü")
         

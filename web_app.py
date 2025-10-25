@@ -159,14 +159,18 @@ def generate():
 
     # Geçici input dosyası oluştur
     headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(image_url, headers=headers)
-    input_tempfile = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-    input_tempfile.write(response.content)
-    input_tempfile.close()
+    try:
+        response = requests.get(image_url, headers=headers, timeout=10)  # Timeout ekle
+        response.raise_for_status()  # HTTP hataları için kontrol
+    except requests.exceptions.RequestException as e:
+        return jsonify({"status": "error", "error": f"Görsel indirilemedi: {str(e)}"})
 
     # Benzersiz çıktı dosyası adı oluştur
-    filename = f"IMG_{uuid.uuid4().hex}.png"
+    filename = f"IMG_{int(time.time())}_{uuid.uuid4().hex[:8]}.png"
     file_path = os.path.join(OUTPUT_FOLDER, filename)
+    
+    # Geçici dosya kullanmadan doğrudan BytesIO ile çalış
+    input_buffer = BytesIO(response.content)
 
     # create_visual() fonksiyonunu kullan
     try:
