@@ -15,9 +15,46 @@ import uuid
 from flask import send_from_directory
 import shutil
 import warnings
+import logging
+
+# Logging ayarları
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
+
+# Uygulama başlatıldığında çalışacak kod
+@app.before_first_request
+def setup_app():
+    try:
+        # Asset dosyalarının varlığını kontrol et
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        required_files = [
+            "Montserrat-Bold.ttf",
+            "Montserrat-Regular.ttf",
+            "template.png",
+            "begentemplate.png",
+            "logo.png",
+            "BEGEN HABER.png"
+        ]
+        
+        missing_files = []
+        for file in required_files:
+            file_path = os.path.join(base_dir, file)
+            if not os.path.exists(file_path):
+                missing_files.append(file)
+        
+        if missing_files:
+            logger.error(f"Eksik dosyalar: {', '.join(missing_files)}")
+            raise FileNotFoundError(f"Gerekli dosyalar eksik: {', '.join(missing_files)}")
+            
+        # Geçici klasörleri temizle ve yeniden oluştur
+        setup_folders()
+        
+    except Exception as e:
+        logger.error(f"Uygulama başlatma hatası: {str(e)}")
+        raise
 
 # Temp ve output klasörleri için /tmp kullan (Render.com için)
 UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp/uploads')
@@ -182,13 +219,31 @@ def generate():
         temp_input.close()
 
         # Görseli indir
-        headers = {"User-Agent": "Mozilla/5.0"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
         try:
-            response = requests.get(image_url, headers=headers, timeout=10)
+            response = requests.get(image_url, headers=headers, timeout=10, verify=False)
             response.raise_for_status()
+            
+            # Görsel içeriğini kontrol et
+            content_type = response.headers.get('content-type', '')
+            if not content_type.startswith('image/'):
+                raise ValueError(f"Geçersiz içerik türü: {content_type}")
+            
+            # Görseli kaydet
             with open(temp_input_path, 'wb') as f:
                 f.write(response.content)
+                
+            # Görsel dosyasını kontrol et
+            try:
+                with Image.open(temp_input_path) as img:
+                    img.verify()
+            except Exception as e:
+                raise ValueError(f"İndirilen dosya geçerli bir görsel değil: {str(e)}")
+                
         except Exception as e:
+            logger.error(f"Görsel indirme hatası: {str(e)}")
             if os.path.exists(temp_input_path):
                 os.unlink(temp_input_path)
             return jsonify({"status": "error", "error": f"Görsel indirilemedi: {str(e)}"}), 400
