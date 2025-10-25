@@ -24,6 +24,18 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
+# Temp ve output klasörleri için /tmp kullan (Render.com için)
+UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp/uploads')
+OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER', '/tmp/outputs')
+
+# Geçici klasörleri temizle ve yeniden oluştur
+def setup_folders():
+    for folder in [UPLOAD_FOLDER, OUTPUT_FOLDER]:
+        try:
+            os.makedirs(folder, exist_ok=True)
+        except Exception as e:
+            warnings.warn(f"Klasör yönetimi hatası {folder}: {e}")
+
 # Uygulama başlatıldığında çalışacak kod
 def setup_app():
     try:
@@ -45,8 +57,6 @@ def setup_app():
                 missing_files.append(file)
         
         if missing_files:
-            logger.error(f"Eksik dosyalar: {', '.join(missing_files)}")
-            # Sadece uyarı ver, uygulamayı durdurmaya gerek yok
             logger.warning(f"Gerekli dosyalar eksik: {', '.join(missing_files)}")
             
         # Geçici klasörleri temizle ve yeniden oluştur
@@ -58,25 +68,7 @@ def setup_app():
 # Uygulama başlatılırken setup'ı çalıştır
 with app.app_context():
     setup_app()
-
-# Temp ve output klasörleri için /tmp kullan (Render.com için)
-UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp/uploads')
-OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER', '/tmp/outputs')
-
-# Geçici klasörleri temizle ve yeniden oluştur
-def setup_folders():
-    for folder in [UPLOAD_FOLDER, OUTPUT_FOLDER]:
-        try:
-            if os.path.exists(folder):
-                shutil.rmtree(folder)
-            os.makedirs(folder, exist_ok=True)
-        except Exception as e:
-            warnings.warn(f"Klasör yönetimi hatası {folder}: {e}")
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
-
-# Klasörleri oluştur
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # Font dosyasının yolu
 FONT_PATH = os.path.join(os.path.dirname(__file__), "Montserrat-Bold.ttf")
