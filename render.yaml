@@ -3,9 +3,10 @@ services:
     name: gorsel-uygulama
     env: python
     plan: free
+    runtime: python-3.11.9
     buildCommand: |
-      pip install --upgrade pip setuptools wheel
-      pip install -r requirements.txt
+      python -m pip install --upgrade pip
+      pip install --only-binary=:all: -r requirements.txt
       mkdir -p /tmp/uploads /tmp/outputs
       cp *.ttf *.png /tmp/
     startCommand: "gunicorn web_app:app --workers 2 --threads 4 --timeout 300 --max-requests 100"
