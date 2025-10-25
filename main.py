@@ -3,13 +3,22 @@ import os
 
 def create_visual(person_image_path, output_path, name_text, company_type="gazete"):
     try:
-        # Firma tipine göre şablon ve logo dosyalarını seç
+        # Şablon ve logo dosyaları için tam yolları kullan
+        base_path = os.path.dirname(os.path.abspath(__file__))
         if company_type == "begen":
-            template_path = os.path.join(os.path.dirname(__file__), "begentemplate.png")
-            logo_path = os.path.join(os.path.dirname(__file__), "BEGEN HABER.png")
+            template_path = os.path.join(base_path, "begentemplate.png")
+            logo_path = os.path.join(base_path, "BEGEN HABER.png")
         else:  # varsayılan gazete
-            template_path = os.path.join(os.path.dirname(__file__), "template.png")
-            logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
+            template_path = os.path.join(base_path, "template.png")
+            logo_path = os.path.join(base_path, "logo.png")
+            
+        # Dosyaların varlığını kontrol et
+        if not os.path.exists(template_path):
+            raise FileNotFoundError(f"Şablon dosyası bulunamadı: {template_path}")
+        if not os.path.exists(logo_path):
+            raise FileNotFoundError(f"Logo dosyası bulunamadı: {logo_path}")
+        if not os.path.exists(person_image_path):
+            raise FileNotFoundError(f"Kaynak görsel bulunamadı: {person_image_path}")
         
         # Görüntüleri güvenli şekilde aç
         with Image.open(template_path) as template_img:

@@ -17,14 +17,17 @@ from flask import send_from_directory
 app = Flask(__name__, static_url_path='/outputs', static_folder='outputs')
 app.secret_key = 'your-secret-key-here'
 
-# Upload klasörü
-UPLOAD_FOLDER = 'uploads'
-OUTPUT_FOLDER = 'outputs'
+# Temp ve output klasörleri için /tmp kullan (Render.com için)
+UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp/uploads')
+OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER', '/tmp/outputs')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
 # Klasörleri oluştur
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# Font dosyasının yolu
+FONT_PATH = os.path.join(os.path.dirname(__file__), "Montserrat-Bold.ttf")
 
 def allowed_file(filename):
     return '.' in filename and \
