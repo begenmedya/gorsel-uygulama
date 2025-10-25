@@ -5,8 +5,7 @@ services:
     plan: free
     buildCommand: |
       python -m pip install --upgrade pip
-      pip install Flask==2.3.3 gunicorn==21.2.0 requests==2.31.0 Werkzeug==2.3.7 uuid==1.30 python-dotenv==1.0.0
-      pip install --upgrade --force-reinstall pillow-simd || pip install --upgrade Pillow
+      pip install -r requirements.txt
       mkdir -p /tmp/uploads /tmp/outputs
       cp *.ttf *.png /tmp/
     startCommand: "gunicorn web_app:app --workers 2 --threads 4 --timeout 300 --max-requests 100"
