@@ -7,6 +7,15 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
         if company_type == "begen":
             template_path = "begentemplate.png"
             logo_path = "BEGEN HABER.png"
+        elif company_type == "begenmedya":
+            template_path = "begenmedyatemplate.png"
+            logo_path = "BEGEN MEDYA.png"
+        elif company_type == "begenfilm":
+            template_path = "begenfilmtemplate.png"
+            logo_path = "BEGEN FILM.png"
+        elif company_type == "begentv":
+            template_path = "begentvtemplate.png"
+            logo_path = "BEGEN TV.png"
         else:  # varsayılan gazete
             template_path = "template.png"
             logo_path = "logo.png"
@@ -213,9 +222,12 @@ if __name__ == "__main__":
     print("Lütfen firma tipini seçin:")
     print("1. Gazete İlkeni")
     print("2. Begen Haber")
+    print("3. Begen Medya")
+    print("4. Begen Film")
+    print("5. Begen TV")
     
     while True:
-        choice = input("Seçiminizi yapın (1 veya 2): ").strip()
+        choice = input("Seçiminizi yapın (1-5): ").strip()
         if choice == "1":
             company_type = "gazete"
             print("Gazete İlkeni seçildi.")
@@ -224,8 +236,20 @@ if __name__ == "__main__":
             company_type = "begen"
             print("Begen Haber seçildi.")
             break
+        elif choice == "3":
+            company_type = "begenmedya"
+            print("Begen Medya seçildi.")
+            break
+        elif choice == "4":
+            company_type = "begenfilm"
+            print("Begen Film seçildi.")
+            break
+        elif choice == "5":
+            company_type = "begentv"
+            print("Begen TV seçildi.")
+            break
         else:
-            print("Geçersiz seçim! Lütfen 1 veya 2 girin.")
+            print("Geçersiz seçim! Lütfen 1-5 arası bir sayı girin.")
     
     # Görsel oluştur
     create_visual("images/person1.jpg", "output1.png", "Belçika Savunma Bakanı Francken'den Atatürk'e Övgü: 'Büyük Bir Devlet Adamıydı'", company_type)

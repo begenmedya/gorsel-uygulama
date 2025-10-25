@@ -46,8 +46,14 @@ def setup_app():
             "Montserrat-Regular.ttf",
             "template.png",
             "begentemplate.png",
+            "begenmedyatemplate.png",
+            "begenfilmtemplate.png",
+            "begentvtemplate.png",
             "logo.png",
-            "BEGEN HABER.png"
+            "BEGEN HABER.png",
+            "BEGEN MEDYA.png",
+            "BEGEN FILM.png",
+            "BEGEN TV.png"
         ]
         
         missing_files = []

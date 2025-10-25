@@ -82,28 +82,42 @@ class MainWindow(QWidget):
         company_label.setStyleSheet("font-weight: bold; margin-top: 15px;")
         layout.addWidget(company_label)
         
-        # Radio button grubu için horizontal layout
-        company_layout = QHBoxLayout()
-        company_layout.setSpacing(20)
+        # Radio button grubu için vertical layout (5 seçenek olduğu için)
+        company_layout = QVBoxLayout()
+        company_layout.setSpacing(10)
         
         # Radio button grubu oluştur
         self.company_group = QButtonGroup()
         
-        self.radio_gazete = QRadioButton("Gazete İlkeni")
+        self.radio_gazete = QRadioButton("📰 Gazete İlkeni")
         self.radio_gazete.setChecked(True)  # Varsayılan seçim
         self.radio_gazete.setStyleSheet("font-size: 14px; color: #2c3e50;")
         
-        self.radio_begen = QRadioButton("Begen Haber")
+        self.radio_begen = QRadioButton("📰 Begen Haber")
         self.radio_begen.setStyleSheet("font-size: 14px; color: #2c3e50;")
+        
+        self.radio_begenmedya = QRadioButton("🎬 Begen Medya")
+        self.radio_begenmedya.setStyleSheet("font-size: 14px; color: #8e44ad;")
+        
+        self.radio_begenfilm = QRadioButton("🎬 Begen Film")
+        self.radio_begenfilm.setStyleSheet("font-size: 14px; color: #e67e22;")
+        
+        self.radio_begentv = QRadioButton("📺 Begen TV")
+        self.radio_begentv.setStyleSheet("font-size: 14px; color: #3498db;")
         
         # Radio buttonları gruba ekle
         self.company_group.addButton(self.radio_gazete, 0)
         self.company_group.addButton(self.radio_begen, 1)
+        self.company_group.addButton(self.radio_begenmedya, 2)
+        self.company_group.addButton(self.radio_begenfilm, 3)
+        self.company_group.addButton(self.radio_begentv, 4)
         
         # Layout'a ekle
         company_layout.addWidget(self.radio_gazete)
         company_layout.addWidget(self.radio_begen)
-        company_layout.addStretch()  # Sağ tarafa boşluk ekle
+        company_layout.addWidget(self.radio_begenmedya)
+        company_layout.addWidget(self.radio_begenfilm)
+        company_layout.addWidget(self.radio_begentv)
         
         layout.addLayout(company_layout)
 
@@ -175,7 +189,18 @@ class MainWindow(QWidget):
             return
         
         # Firma tipini belirle
-        company_type = "gazete" if self.radio_gazete.isChecked() else "begen"
+        if self.radio_gazete.isChecked():
+            company_type = "gazete"
+        elif self.radio_begen.isChecked():
+            company_type = "begen"
+        elif self.radio_begenmedya.isChecked():
+            company_type = "begenmedya"
+        elif self.radio_begenfilm.isChecked():
+            company_type = "begenfilm"
+        elif self.radio_begentv.isChecked():
+            company_type = "begentv"
+        else:
+            company_type = "gazete"  # Varsayılan
             
         try:
             # Çıktı dosyasının konumunu belirle
