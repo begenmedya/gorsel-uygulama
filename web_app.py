@@ -203,87 +203,263 @@ def get_generated_image(filename):
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
-        data = request.get_json(force=True)
-        title = data.get("title")
-        image_url = data.get("image_url")
-        brand = (data.get("brand") or "gazeteilke").lower()
+        # Content-Type kontrolü
+        if not request.is_json and not request.form:
+            return jsonify({"status": "error", "error": "JSON veya form verisi gerekli"}), 400
+            
+        # JSON veya form verilerini al
+        if request.is_json:
+            data = request.get_json(force=True)
+        else:
+            data = request.form.to_dict()
+            
+        title = data.get("title", "").strip()
+        image_url = data.get("image_url", "").strip()
+        brand = (data.get("brand", "gazeteilke") or "gazeteilke").lower().strip()
 
-        if not title or not image_url:
-            return jsonify({"status": "error", "error": "Title ve image_url gerekli"}), 400
+        # Zorunlu alanları kontrol et
+        if not title:
+            return jsonify({"status": "error", "error": "Title alanı gerekli ve boş olamaz"}), 400
+        if not image_url:
+            return jsonify({"status": "error", "error": "image_url alanı gerekli ve boş olamaz"}), 400
+
+        # URL formatını kontrol et
+        if not image_url.startswith(('http://', 'https://')):
+            return jsonify({"status": "error", "error": "Geçersiz image_url formatı. http:// veya https:// ile başlamalı"}), 400
 
         # Firma tipini belirle
-        company_type = "begen" if brand == "begenhaber" else "gazete"
+        company_type_map = {
+            "begenhaber": "begen",
+            "begen": "begen", 
+            "begenmedya": "begenmedya",
+            "begenfilm": "begenfilm", 
+            "begentv": "begentv",
+            "gazeteilke": "gazete",
+            "gazete": "gazete"
+        }
+        company_type = company_type_map.get(brand, "gazete")
+        
+        print(f"📝 İstek detayları: title='{title}', brand='{brand}', company_type='{company_type}'")
+        print(f"🖼 Image URL: {image_url}")
 
         # Geçici dosyaları oluştur
-        temp_input = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+        temp_input = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
         temp_input_path = temp_input.name
         temp_input.close()
 
+        print(f"📂 Geçici dosya: {temp_input_path}")
+
         # Görseli indir
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8"
         }
+        
         try:
-            response = requests.get(image_url, headers=headers, timeout=10, verify=False)
+            print("🔽 Görsel indiriliyor...")
+            response = requests.get(image_url, headers=headers, timeout=30, verify=False, stream=True)
+            print(f"📡 HTTP Status: {response.status_code}")
             response.raise_for_status()
             
-            # Görsel içeriğini kontrol et
-            content_type = response.headers.get('content-type', '')
-            if not content_type.startswith('image/'):
+            # Content-Type kontrolü
+            content_type = response.headers.get('content-type', '').lower()
+            print(f"📋 Content-Type: {content_type}")
+            
+            if not any(img_type in content_type for img_type in ['image/', 'jpeg', 'png', 'gif', 'bmp', 'webp']):
                 raise ValueError(f"Geçersiz içerik türü: {content_type}")
             
-            # Görseli kaydet
+            # Görsel içeriğini kaydet
             with open(temp_input_path, 'wb') as f:
-                f.write(response.content)
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    
+            print(f"💾 Görsel kaydedildi: {os.path.getsize(temp_input_path)} bytes")
                 
-            # Görsel dosyasını kontrol et
+            # Görsel dosyasını doğrula
             try:
                 with Image.open(temp_input_path) as img:
                     img.verify()
+                print("✅ Görsel doğrulandı")
             except Exception as e:
                 raise ValueError(f"İndirilen dosya geçerli bir görsel değil: {str(e)}")
                 
-        except Exception as e:
+        except requests.exceptions.Timeout:
+            logger.error("Görsel indirme timeout hatası")
+            if os.path.exists(temp_input_path):
+                os.unlink(temp_input_path)
+            return jsonify({"status": "error", "error": "Görsel indirme zaman aşımına uğradı (30 saniye)"}), 408
+            
+        except requests.exceptions.RequestException as e:
             logger.error(f"Görsel indirme hatası: {str(e)}")
             if os.path.exists(temp_input_path):
                 os.unlink(temp_input_path)
             return jsonify({"status": "error", "error": f"Görsel indirilemedi: {str(e)}"}), 400
+            
+        except Exception as e:
+            logger.error(f"Genel görsel indirme hatası: {str(e)}")
+            if os.path.exists(temp_input_path):
+                os.unlink(temp_input_path)
+            return jsonify({"status": "error", "error": f"Görsel işleme hatası: {str(e)}"}), 400
 
         # Benzersiz çıktı dosyası adı oluştur
-        filename = f"IMG_{int(time.time())}_{uuid.uuid4().hex[:8]}.png"
+        safe_title = re.sub(r'[^\w\s-]', '', title)[:50]  # İlk 50 karakter, güvenli karakterler
+        timestamp = int(time.time())
+        random_id = uuid.uuid4().hex[:8]
+        filename = f"IMG_{timestamp}_{random_id}.png"
         output_path = os.path.join(OUTPUT_FOLDER, filename)
+        
+        print(f"📁 Çıktı dosyası: {output_path}")
 
         try:
             # Önce dosyaların var olduğundan emin ol
             if not os.path.exists(temp_input_path):
-                raise FileNotFoundError("Kaynak görsel bulunamadı")
+                raise FileNotFoundError("Kaynak görsel dosyası bulunamadı")
 
             # Çıktı klasörünün var olduğundan emin ol
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
+            print("🎨 Görsel oluşturuluyor...")
             # create_visual() fonksiyonunu kullan
             success = create_visual(temp_input_path, output_path, title, company_type)
             if not success:
-                raise Exception("Görsel oluşturulamadı")
+                raise Exception("create_visual fonksiyonu False döndü")
 
             # Çıktı dosyasının oluştuğunu kontrol et
             if not os.path.exists(output_path):
                 raise FileNotFoundError("Çıktı dosyası oluşturulamadı")
+                
+            # Dosya boyutunu kontrol et
+            file_size = os.path.getsize(output_path)
+            if file_size == 0:
+                raise Exception("Oluşturulan dosya boş")
 
-            print("✅ Dosya kaydedildi:", output_path)
+            print(f"✅ Dosya başarıyla oluşturuldu: {output_path} ({file_size} bytes)")
             return jsonify({
                 "status": "ok",
-                "file_path": f"/get-image/{filename}"
+                "message": "Görsel başarıyla oluşturuldu",
+                "file_path": f"/get-image/{filename}",
+                "filename": filename,
+                "file_size": file_size
             })
+            
         except Exception as e:
-            print("❌ HATA:", str(e))
-            return jsonify({"status": "error", "error": str(e)}), 500
+            error_msg = f"Görsel oluşturma hatası: {str(e)}"
+            print(f"❌ HATA: {error_msg}")
+            logger.error(error_msg)
+            return jsonify({"status": "error", "error": error_msg}), 500
+            
         finally:
             # Geçici dosyaları temizle
             if os.path.exists(temp_input_path):
                 try:
                     os.unlink(temp_input_path)
-                except:
-                    pass
+                    print("🗑 Geçici dosya temizlendi")
+                except Exception as e:
+                    print(f"⚠ Geçici dosya silinemedi: {e}")
+                    
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        error_msg = f"Beklenmeyen hata: {str(e)}"
+        print(f"💥 KRITIK HATA: {error_msg}")
+        logger.error(error_msg)
+        return jsonify({"status": "error", "error": error_msg}), 500
+
+# Debug ve sağlık kontrol endpoint'leri
+@app.route('/health', methods=['GET'])
+def health_check():
+    """API'nin çalışır durumda olduğunu kontrol eden endpoint"""
+    return jsonify({
+        "status": "ok", 
+        "message": "API çalışıyor",
+        "timestamp": datetime.now().isoformat()
+    })
+
+@app.route('/test-files', methods=['GET'])
+def test_files():
+    """Gerekli dosyaların varlığını kontrol eden endpoint"""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    required_files = [
+        "Montserrat-Bold.ttf",
+        "Montserrat-Regular.ttf", 
+        "template.png",
+        "begentemplate.png",
+        "begenmedyatemplate.png",
+        "begenfilmtemplate.png", 
+        "begentvtemplate.png",
+        "logo.png",
+        "BEGEN HABER.png",
+        "BEGEN MEDYA.png",
+        "BEGEN FILM.png",
+        "BEGEN TV.png"
+    ]
+    
+    file_status = {}
+    all_exists = True
+    
+    for file in required_files:
+        file_path = os.path.join(base_dir, file)
+        exists = os.path.exists(file_path)
+        file_status[file] = {
+            "exists": exists,
+            "path": file_path,
+            "size": os.path.getsize(file_path) if exists else 0
+        }
+        if not exists:
+            all_exists = False
+    
+    return jsonify({
+        "status": "ok" if all_exists else "warning",
+        "all_files_exist": all_exists,
+        "files": file_status,
+        "base_directory": base_dir
+    })
+
+@app.route('/debug-generate', methods=['POST'])
+def debug_generate():
+    """Debug için detaylı log içeren generate endpoint'i"""
+    debug_info = []
+    
+    try:
+        debug_info.append("🔍 Debug generate başlatıldı")
+        
+        # Request analizi
+        debug_info.append(f"Content-Type: {request.content_type}")
+        debug_info.append(f"Method: {request.method}")
+        debug_info.append(f"Headers: {dict(request.headers)}")
+        
+        if request.is_json:
+            data = request.get_json(force=True)
+            debug_info.append(f"JSON data: {data}")
+        else:
+            data = request.form.to_dict()
+            debug_info.append(f"Form data: {data}")
+            
+        # Gerekli alanları kontrol et
+        title = data.get("title", "").strip()
+        image_url = data.get("image_url", "").strip() 
+        brand = (data.get("brand", "gazeteilke") or "gazeteilke").lower().strip()
+        
+        debug_info.append(f"Parsed - title: '{title}', image_url: '{image_url}', brand: '{brand}'")
+        
+        return jsonify({
+            "status": "debug",
+            "debug_info": debug_info,
+            "parsed_data": {
+                "title": title,
+                "image_url": image_url,
+                "brand": brand
+            }
+        })
+        
+    except Exception as e:
+        debug_info.append(f"❌ Debug hatası: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "error": str(e),
+            "debug_info": debug_info
+        }), 500
+
+if __name__ == '__main__':
+    # Geliştirme ortamında çalıştırmak için
+    app.run(host='0.0.0.0', port=5000, debug=True)

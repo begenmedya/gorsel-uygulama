@@ -3,30 +3,46 @@ import os
 
 def create_visual(person_image_path, output_path, name_text, company_type="gazete"):
     try:
+        print(f"🎯 İşlem başlatılıyor: {company_type} için {person_image_path} -> {output_path}")
+        print(f"📝 Metin: {name_text[:50]}{'...' if len(name_text) > 50 else ''}")
+        
+        # Mutlak yol kontrolü
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        print(f"📂 Çalışma dizini: {current_dir}")
+        
         # Firma tipine göre şablon ve logo dosyalarını seç
         if company_type == "begen":
-            template_path = "begentemplate.png"
-            logo_path = "BEGEN HABER.png"
+            template_path = os.path.join(current_dir, "begentemplate.png")
+            logo_path = os.path.join(current_dir, "BEGEN HABER.png")
         elif company_type == "begenmedya":
-            template_path = "begenmedyatemplate.png"
-            logo_path = "BEGEN MEDYA.png"
+            template_path = os.path.join(current_dir, "begenmedyatemplate.png")
+            logo_path = os.path.join(current_dir, "BEGEN MEDYA.png")
         elif company_type == "begenfilm":
-            template_path = "begenfilmtemplate.png"
-            logo_path = "BEGEN FILM.png"
+            template_path = os.path.join(current_dir, "begenfilmtemplate.png")
+            logo_path = os.path.join(current_dir, "BEGEN FILM.png")
         elif company_type == "begentv":
-            template_path = "begentvtemplate.png"
-            logo_path = "BEGEN TV.png"
+            template_path = os.path.join(current_dir, "begentvtemplate.png")
+            logo_path = os.path.join(current_dir, "BEGEN TV.png")
         else:  # varsayılan gazete
-            template_path = "template.png"
-            logo_path = "logo.png"
+            template_path = os.path.join(current_dir, "template.png")
+            logo_path = os.path.join(current_dir, "logo.png")
             
+        print(f"🎨 Şablon: {template_path}")
+        print(f"🏷 Logo: {logo_path}")
+        
         # Dosyaların varlığını kontrol et
+        missing_files = []
         if not os.path.exists(template_path):
-            raise FileNotFoundError(f"Şablon dosyası bulunamadı: {template_path}")
+            missing_files.append(f"Şablon: {template_path}")
         if not os.path.exists(logo_path):
-            raise FileNotFoundError(f"Logo dosyası bulunamadı: {logo_path}")
+            missing_files.append(f"Logo: {logo_path}")
         if not os.path.exists(person_image_path):
-            raise FileNotFoundError(f"Kaynak görsel bulunamadı: {person_image_path}")
+            missing_files.append(f"Kaynak görsel: {person_image_path}")
+            
+        if missing_files:
+            error_msg = f"Gerekli dosyalar bulunamadı: {', '.join(missing_files)}"
+            print(f"❌ {error_msg}")
+            raise FileNotFoundError(error_msg)
         
         # Görüntüleri güvenli şekilde aç
         with Image.open(template_path) as template_img:
@@ -86,23 +102,32 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
         # Montserrat Bold font kullan
         font_size = 72
         font = None
+        # Font dosyasının mutlak yolunu belirle
+        current_dir = os.path.dirname(os.path.abspath(__file__))
         font_paths = [
-            os.path.join(os.path.dirname(__file__), "Montserrat-Bold.ttf"),    # Aynı klasördeki Montserrat Bold
-            os.path.join(os.path.dirname(__file__), "Montserrat-Regular.ttf"), # Yedek Montserrat Regular
-            "C:/Windows/Fonts/arialbd.ttf",   # Arial Bold
-            "C:/Windows/Fonts/calibrib.ttf",  # Calibri Bold
-            "C:/Windows/Fonts/arial.ttf",     # Arial Regular
+            os.path.join(current_dir, "Montserrat-Bold.ttf"),    # Aynı klasördeki Montserrat Bold
+            os.path.join(current_dir, "Montserrat-Regular.ttf"), # Yedek Montserrat Regular
+            "C:/Windows/Fonts/arialbd.ttf",   # Arial Bold (Windows)
+            "C:/Windows/Fonts/calibrib.ttf",  # Calibri Bold (Windows)
+            "C:/Windows/Fonts/arial.ttf",     # Arial Regular (Windows)
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Linux
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",  # Linux alternatif
             "/System/Library/Fonts/Arial.ttf",  # macOS
-            "arial.ttf"
+            "./Montserrat-Bold.ttf",          # Göreceli yol
+            "./fonts/Montserrat-Bold.ttf",    # Alt klasör
+            "arial.ttf"                       # Son çare
         ]
         
         for font_path in font_paths:
             try:
-                font = ImageFont.truetype(font_path, font_size)
-                print(f"Font yüklendi: {font_path}")
-                break
-            except:
+                if os.path.exists(font_path):
+                    font = ImageFont.truetype(font_path, font_size)
+                    print(f"Font yüklendi: {font_path}")
+                    break
+                else:
+                    print(f"Font dosyası bulunamadı: {font_path}")
+            except Exception as e:
+                print(f"Font yükleme hatası ({font_path}): {e}")
                 continue
         
         if font is None:
@@ -125,7 +150,23 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
         # İkili arama ile optimum font boyutunu bul
         while max_font_size - min_font_size > 1:
             font_size = (max_font_size + min_font_size) // 2
-            font = ImageFont.truetype(font_paths[0], font_size)
+            try:
+                # İlk geçerli font dosyasını bul ve kullan
+                working_font_path = None
+                for fp in font_paths:
+                    if os.path.exists(fp):
+                        working_font_path = fp
+                        break
+                
+                if working_font_path:
+                    font = ImageFont.truetype(working_font_path, font_size)
+                else:
+                    font = ImageFont.load_default()
+                    
+            except Exception as e:
+                print(f"Font boyutlandırma hatası: {e}")
+                font = ImageFont.load_default()
+                
             lines = wrap_text(name_text, font, text_area['width'], draw)
             line_height = int(font_size * 1.2)  # Satır arası boşluğu font boyutuna göre ayarla
             total_height = len(lines) * line_height
@@ -137,7 +178,21 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
                 
         # Son font boyutunu ayarla
         font_size = min_font_size
-        font = ImageFont.truetype(font_paths[0], font_size)
+        try:
+            working_font_path = None
+            for fp in font_paths:
+                if os.path.exists(fp):
+                    working_font_path = fp
+                    break
+            
+            if working_font_path:
+                font = ImageFont.truetype(working_font_path, font_size)
+            else:
+                font = ImageFont.load_default()
+                
+        except Exception as e:
+            print(f"Final font yükleme hatası: {e}")
+            font = ImageFont.load_default()
         lines = wrap_text(name_text, font, text_area['width'], draw)
         line_height = int(font_size * 1.2)  # Final satır arası boşluğu
         
