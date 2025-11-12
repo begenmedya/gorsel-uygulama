@@ -336,10 +336,16 @@ def generate():
                 raise Exception("Oluşturulan dosya boş")
 
             print(f"✅ Dosya başarıyla oluşturuldu: {output_path} ({file_size} bytes)")
+            
+            # Tam URL'yi oluştur (Instagram için)
+            base_url = request.url_root.rstrip('/')
+            full_image_url = f"{base_url}/get-image/{filename}"
+            
             return jsonify({
                 "status": "ok",
                 "message": "Görsel başarıyla oluşturuldu",
                 "file_path": f"/get-image/{filename}",
+                "image_url": full_image_url,  # Instagram için tam URL
                 "filename": filename,
                 "file_size": file_size
             })
@@ -427,6 +433,7 @@ def debug_generate():
         debug_info.append(f"Content-Type: {request.content_type}")
         debug_info.append(f"Method: {request.method}")
         debug_info.append(f"Headers: {dict(request.headers)}")
+        debug_info.append(f"URL Root: {request.url_root}")
         
         if request.is_json:
             data = request.get_json(force=True)
@@ -442,6 +449,17 @@ def debug_generate():
         
         debug_info.append(f"Parsed - title: '{title}', image_url: '{image_url}', brand: '{brand}'")
         
+        # Instagram için örnek response
+        base_url = request.url_root.rstrip('/')
+        sample_response = {
+            "status": "ok",
+            "message": "Görsel başarıyla oluşturuldu",
+            "file_path": f"/get-image/sample_filename.png",
+            "image_url": f"{base_url}/get-image/sample_filename.png", # Instagram için tam URL
+            "filename": "sample_filename.png",
+            "file_size": 1234567
+        }
+        
         return jsonify({
             "status": "debug",
             "debug_info": debug_info,
@@ -449,7 +467,8 @@ def debug_generate():
                 "title": title,
                 "image_url": image_url,
                 "brand": brand
-            }
+            },
+            "sample_success_response": sample_response
         })
         
     except Exception as e:
