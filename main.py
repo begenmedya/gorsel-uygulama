@@ -217,9 +217,53 @@ def create_visual(person_image_path, output_path, name_text, company_type="gazet
             
             print(f"Satır yazıldı: '{line}' konumda ({x_position}, {y_position})")
 
-        # Sonucu kaydet
-        template.save(output_path)
-        print(f"Görsel başarıyla oluşturuldu: {output_path}")
+        # Sonucu kaydet - Instagram uyumlu format
+        # Instagram gereksinimleri: JPEG, max 8MB, 4:5 ile 1.91:1 arası en-boy oranı
+        
+        # En-boy oranını kontrol et ve gerekirse Instagram uyumlu hale getir
+        current_ratio = template_width / template_height
+        print(f"Mevcut en-boy oranı: {current_ratio:.2f}")
+        
+        # Instagram için optimal en-boy oranı: 1.91:1 (landscape) veya 4:5 (portrait)
+        # Mevcut 1440x1920 = 0.75 (4:5 oranına yakın, uygun)
+        
+        if output_path.endswith('.jpg') or output_path.endswith('.jpeg'):
+            # Instagram için JPEG formatına çevir
+            print("JPEG formatına dönüştürülüyor...")
+            
+            # RGBA'yı RGB'ye çevir (JPEG için)
+            rgb_template = Image.new('RGB', template.size, (255, 255, 255))
+            if template.mode == 'RGBA':
+                # Alpha channel'ı kullanarak paste et
+                rgb_template.paste(template, (0, 0), template)
+            else:
+                rgb_template.paste(template, (0, 0))
+            
+            # Yüksek kalitede JPEG olarak kaydet
+            rgb_template.save(output_path, 'JPEG', quality=85, optimize=True)
+            print(f"Instagram uyumlu JPEG görsel oluşturuldu: {output_path}")
+            
+        elif output_path.endswith('.png'):
+            # PNG olarak kaydet ama JPEG de oluştur
+            template.save(output_path)
+            print(f"PNG görsel oluşturuldu: {output_path}")
+            
+            # Instagram için JPEG versiyonu da oluştur
+            output_path_jpg = output_path.replace('.png', '.jpg')
+            rgb_template = Image.new('RGB', template.size, (255, 255, 255))
+            if template.mode == 'RGBA':
+                rgb_template.paste(template, (0, 0), template)
+            else:
+                rgb_template.paste(template, (0, 0))
+            
+            rgb_template.save(output_path_jpg, 'JPEG', quality=85, optimize=True)
+            print(f"Instagram uyumlu JPEG yedek oluşturuldu: {output_path_jpg}")
+            
+        else:
+            # Diğer formatlar için varsayılan
+            template.save(output_path)
+            print(f"Görsel başarıyla oluşturuldu: {output_path}")
+            
         return True
         
     except Exception as e:

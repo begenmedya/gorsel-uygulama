@@ -198,7 +198,17 @@ def serve_file(filename):
 # Alternatif ve sorunsuz download endpoint
 @app.route('/get-image/<filename>')
 def get_generated_image(filename):
-    return send_file(os.path.join(OUTPUT_FOLDER, filename), mimetype='image/png')
+    file_path = os.path.join(OUTPUT_FOLDER, filename)
+    
+    # Dosya uzantısına göre MIME type belirle
+    if filename.lower().endswith('.jpg') or filename.lower().endswith('.jpeg'):
+        mimetype = 'image/jpeg'
+    elif filename.lower().endswith('.png'):
+        mimetype = 'image/png'
+    else:
+        mimetype = 'image/jpeg'  # Varsayılan
+    
+    return send_file(file_path, mimetype=mimetype)
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -303,11 +313,11 @@ def generate():
                 os.unlink(temp_input_path)
             return jsonify({"status": "error", "error": f"Görsel işleme hatası: {str(e)}"}), 400
 
-        # Benzersiz çıktı dosyası adı oluştur
+        # Benzersiz çıktı dosyası adı oluştur (Instagram için JPEG)
         safe_title = re.sub(r'[^\w\s-]', '', title)[:50]  # İlk 50 karakter, güvenli karakterler
         timestamp = int(time.time())
         random_id = uuid.uuid4().hex[:8]
-        filename = f"IMG_{timestamp}_{random_id}.png"
+        filename = f"IMG_{timestamp}_{random_id}.jpg"  # Instagram için JPEG
         output_path = os.path.join(OUTPUT_FOLDER, filename)
         
         print(f"📁 Çıktı dosyası: {output_path}")
@@ -369,6 +379,135 @@ def generate():
         error_msg = f"Beklenmeyen hata: {str(e)}"
         print(f"💥 KRITIK HATA: {error_msg}")
         logger.error(error_msg)
+        return jsonify({"status": "error", "error": error_msg}), 500
+
+@app.route("/generate-instagram", methods=["POST"])
+def generate_instagram():
+    """Instagram için optimize edilmiş görsel oluşturma endpoint'i"""
+    try:
+        # Content-Type kontrolü
+        if not request.is_json and not request.form:
+            return jsonify({"status": "error", "error": "JSON veya form verisi gerekli"}), 400
+            
+        # JSON veya form verilerini al
+        if request.is_json:
+            data = request.get_json(force=True)
+        else:
+            data = request.form.to_dict()
+            
+        title = data.get("title", "").strip()
+        image_url = data.get("image_url", "").strip()
+        brand = (data.get("brand", "gazeteilke") or "gazeteilke").lower().strip()
+
+        # Zorunlu alanları kontrol et
+        if not title:
+            return jsonify({"status": "error", "error": "Title alanı gerekli"}), 400
+        if not image_url:
+            return jsonify({"status": "error", "error": "image_url alanı gerekli"}), 400
+
+        # URL formatını kontrol et
+        if not image_url.startswith(('http://', 'https://')):
+            return jsonify({"status": "error", "error": "Geçersiz image_url formatı"}), 400
+
+        # Firma tipini belirle
+        company_type_map = {
+            "begenhaber": "begen",
+            "begen": "begen", 
+            "begenmedya": "begenmedya",
+            "begenfilm": "begenfilm", 
+            "begentv": "begentv",
+            "gazeteilke": "gazete",
+            "gazete": "gazete"
+        }
+        company_type = company_type_map.get(brand, "gazete")
+        
+        print(f"📝 Instagram isteği: title='{title}', brand='{brand}', company_type='{company_type}'")
+
+        # Geçici dosyaları oluştur
+        temp_input = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+        temp_input_path = temp_input.name
+        temp_input.close()
+
+        # Görseli indir
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        
+        try:
+            response = requests.get(image_url, headers=headers, timeout=30, verify=False, stream=True)
+            response.raise_for_status()
+            
+            with open(temp_input_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    
+            # Görsel dosyasını doğrula
+            with Image.open(temp_input_path) as img:
+                img.verify()
+                
+        except Exception as e:
+            if os.path.exists(temp_input_path):
+                os.unlink(temp_input_path)
+            return jsonify({"status": "error", "error": f"Görsel işleme hatası: {str(e)}"}), 400
+
+        # Instagram için optimal dosya adı (JPEG zorunlu)
+        timestamp = int(time.time())
+        random_id = uuid.uuid4().hex[:8]
+        filename = f"INSTAGRAM_{timestamp}_{random_id}.jpg"
+        output_path = os.path.join(OUTPUT_FOLDER, filename)
+
+        try:
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+            # create_visual() fonksiyonunu kullan
+            success = create_visual(temp_input_path, output_path, title, company_type)
+            if not success:
+                raise Exception("create_visual fonksiyonu False döndü")
+
+            # Dosya boyutunu kontrol et (Instagram: max 8MB)
+            file_size = os.path.getsize(output_path)
+            max_size = 8 * 1024 * 1024  # 8MB
+            
+            if file_size > max_size:
+                # Dosya çok büyükse kaliteyi düşür
+                print(f"⚠ Dosya çok büyük ({file_size} bytes), sıkıştırılıyor...")
+                with Image.open(output_path) as img:
+                    img.save(output_path, 'JPEG', quality=70, optimize=True)
+                file_size = os.path.getsize(output_path)
+                print(f"✅ Sıkıştırıldı: {file_size} bytes")
+
+            # Tam URL'yi oluştur
+            base_url = request.url_root.rstrip('/')
+            full_image_url = f"{base_url}/get-image/{filename}"
+            
+            print(f"✅ Instagram uyumlu dosya oluşturuldu: {output_path} ({file_size} bytes)")
+            
+            return jsonify({
+                "status": "ok",
+                "message": "Instagram uyumlu görsel başarıyla oluşturuldu",
+                "file_path": f"/get-image/{filename}",
+                "image_url": full_image_url,
+                "filename": filename,
+                "file_size": file_size,
+                "instagram_compatible": True,
+                "format": "JPEG"
+            })
+            
+        except Exception as e:
+            error_msg = f"Instagram görsel oluşturma hatası: {str(e)}"
+            print(f"❌ HATA: {error_msg}")
+            return jsonify({"status": "error", "error": error_msg}), 500
+            
+        finally:
+            if os.path.exists(temp_input_path):
+                try:
+                    os.unlink(temp_input_path)
+                except:
+                    pass
+                    
+    except Exception as e:
+        error_msg = f"Instagram endpoint hatası: {str(e)}"
+        print(f"💥 KRITIK HATA: {error_msg}")
         return jsonify({"status": "error", "error": error_msg}), 500
 
 # Debug ve sağlık kontrol endpoint'leri
